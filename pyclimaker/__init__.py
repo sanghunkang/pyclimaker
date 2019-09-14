@@ -1,45 +1,59 @@
+# from .exceptions import InvalidBindingAttemptException
+from .argprompts import PyCliArgPrompt
+
 class PyCliMain():
     def __init__(self):
-        self.MESSAGE_PROMPT = "Enter command you want to execute: "
         self.MESSAGE_PROMPT_INVALID_COMMAND = "This is an invalid key"
         self.MESSAGE_EXIT = "Aborting the programme"
-        self.cli_commmands = {
-            # "help": help_command,
-            # "exit": exit_command
-        }
+        self.help_message = "This is a help message"
+        self.functions = {}
     
-    def add_cli_command(self, cli_command):
-        if isinstance(cli_command, PyCliFunctionPrompt):
-            self.cli_commmands[cli_command.command] = cli_command
-        else:
-            raise Exception
+    def bind_function(self, function_prompt, cli_command):
+        if isinstance(function_prompt, PyCliFunctionPrompt) == False:
+            raise Exception("Invalid attempt to bind an invalid function_prompt") 
+        
+        self.functions[cli_command] = function_prompt
+        # Modify help message
 
-    def build(self):
-        # Generate help message ... ?
-        # Generate prompt-command-excution loop
+    def run(self):
+        print(f"\033[1mStarting the programme\033[0m")
+
+        # Prompt-command-excution loop
         while True:
-            print(self.MESSAGE_PROMPT)
+            print(f"\033[1mEnter function(alias) you want to execute:\033[0m", end=" ")
             command = input()
-            if command == "exit":
+            
+            if command in self.functions.keys():
+                self.functions[command].trigger()
+            elif command == "help":
+                print(self.help_message)
+            elif command == "exit":
                 print(self.MESSAGE_EXIT)
-            elif command in self.cli_commmands.keys():
-                self.cli_commmands[command].run()
-
+                break
             else:
                 print(self.MESSAGE_PROMPT_INVALID_COMMAND)
+            print()
+
 
 class PyCliFunctionPrompt():
     def __init__(self, function, description):
-        if callable(function) == False: # What really matters is if some variable does some operations
-            raise Exception("Invalid argument. function must be a type of callable.")
+        # Type checks
+        if callable(function) == False:
+            raise Exception("function must be a callable.")
         
-        argcount_non_defaults = function.__code__.co_argcount - len(function.__defaults__)
-        
-        # Initialisation
+        # Define helper variables
+        if function.__defaults__ != None:
+            argcount_non_defaults = function.__code__.co_argcount - len(function.__defaults__)
+        else:
+            argcount_non_defaults = function.__code__.co_argcount
+
+        # Initialise attributes
         self.function = function
+        self.description = description
+        
         self.function_args = {} # Can be either defined by developers or inputted by users
         for i in range(function.__code__.co_argcount):
-            if argcount_non_defaults < i: #function.__defaults__[i]  else None
+            if argcount_non_defaults < i:
                 default_at_function = function.__defaults__[i]
             else:
                 default_at_function = None
@@ -49,39 +63,56 @@ class PyCliFunctionPrompt():
                 "default_at_cli": None,
                 "default_at_function": default_at_function
             }
-
         self.function_args_aliases = {key: key for key in self.function_args.keys()}
-        self.description = description
         
         # Properties to be filled by the developer
         self.arg_prompts = {}
 
     def bind_function_args_aliases(self, alias, arg_name):
+        # Type checks
         if isinstance(alias, str) == False:
-            raise Exception()
+            raise TypeError("alias must be of type 'str'")
+
+        if isinstance(arg_name, str) == False:
+            raise TypeError("arg_name must be of type 'str'")
+
+        # Runtime checks
         if arg_name not in self.function_args:
             raise Exception()
 
-    def bind_default_arguments(self, arg_alias, arg_value, is_predefined):
+        self.function_args_aliases[alias] = arg_name
+
+    def bind_default_cli_arg(self, arg_alias, arg_value, is_predefined):
+        # Type checks
+        if isinstance(arg_alias, str) == False:
+            raise TypeError("arg_alias must be of type 'str'")
+
+        if isinstance(is_predefined, bool) == False:
+            raise Exception("is_predefined must be of type 'bool'")
+
+        # Runtime checks
         if arg_alias not in self.function_args_aliases.keys():
             raise Exception("Invalid arg_name")
         
         arg_name = self.function_args_aliases[arg_alias]
-        self.function_args[arg_name].is_predefined = is_predefined
-        self.function_args[arg_name].arg_value = default_at_cli
+        self.function_args[arg_name]["is_predefined"] = is_predefined
+        self.function_args[arg_name]["default_at_cli"] = arg_value 
         
     def bind_arg_prompt(self, arg_prompt, command_to_bind):
+        # Type checks
         if isinstance(arg_prompt, PyCliArgPrompt) == False:
-            raise Exception("Invalid argument. arg_prompt must be a type of PyCliArgPrompt (or its inheritance?)")
+            raise TypeError("arg_prompt must be of type <class 'PyCliArgPrompt'>")
         
         if isinstance(command_to_bind, str) == False:
-            # NOTE MAYBE I CAN LOOSEN THE RESTIRCTION TO ACCEPT TYPES LIKE INTS
-            raise Exception()
-            
+            raise TypeError("command_to_bind must be of type 'str'")
+
+        # Runtime checks 
         if command_to_bind not in self.function_args_aliases:
             # Any input that doesn't contribute to specifying argument to the function is considered invalid
-
             raise Exception("Invalid binding. ")
+
+        if self.function_args[self.function_args_aliases[command_to_bind]]["is_predefined"]:
+            raise Exception("Invalid attempt to overide predefined argument")
 
         if self.function_args_aliases[command_to_bind] in self.arg_prompts:
             raise Exception("Overring arg_prompt")
@@ -90,6 +121,7 @@ class PyCliFunctionPrompt():
 
     def trigger(self):
         # Do base prompting
+        print(f"Executing function({self.function.__name__})")
         args_to_pass = {}
         
         # Prepare arguments to pass using CLI defaults and functions defaults
@@ -107,15 +139,12 @@ class PyCliFunctionPrompt():
         for arg_name, arg_prompt in self.arg_prompts.items():
             args_to_pass[arg_name] = arg_prompt.trigger()
 
-        self.function(**args_to_pass)
+        # Call the function
+        try:
+            self.function(**args_to_pass)
+            print(f"Successfully executed function({self.function.__name__})")
+        except Exception as e:
+            print(e)
+            print(f"An error occcured during execution of function({self.function.__name__})")
 
 
-class PyCliArgPrompt():
-    def __init__(self, message):
-        self.message = message
-    
-    def execute(self):
-        # Do base prompting
-
-        # if input which triggers binded action is givern
-        pass
