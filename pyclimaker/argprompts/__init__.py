@@ -1,4 +1,8 @@
+from .. import utils
+
 import os
+
+
 
 class PyCliArgPrompt():
     def __init__(self):
@@ -36,7 +40,7 @@ class PyCliFileSelectionPrompt(PyCliArgPrompt):
             
             # Check input validity
             if arg.isdigit() == False:
-                print("Invalid input. Must an integer between A <= X <= Y")
+                utils.log_warning("Invalid input. Must an integer between A <= X <= Y")
                 continue
             # NOTE elif CANCEL COMMANDS
 
@@ -51,7 +55,7 @@ class PyCliFileSelectionPrompt(PyCliArgPrompt):
                 print(f"Selected argument: {filenames[arg_index]}")
                 return filenames[arg_index]
             else:
-                print("Invalid input. Must an integer between A <= X <= Y")
+                utils.log_warning("Invalid input. Must an integer between A <= X <= Y")
                 
         
 
