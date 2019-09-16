@@ -9,10 +9,10 @@
 
 # Message prompting to user
 def log_prompt(log_string):
-    print(f"\033[1m{log_string}\033[0m")
+    print(f"\033[1m>>> \033[34m{log_string}\033[0m", end=" ")
 
 # Message indicating good process
-def log_good(log_string):
+def log_success(log_string):
     print(f"\033[32m{log_string}\033[0m")
 
 # Message indicating warning
