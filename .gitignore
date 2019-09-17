@@ -4,7 +4,10 @@
 **.vscode
 **venv
 
-# Build outputs
+# Build outputs from setup.py
 **.egg-info/
 **/build
 **/dist
+
+# Build outputs from pyinstaller
+*.spec

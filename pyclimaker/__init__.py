@@ -65,27 +65,15 @@ class PyCliFunctionPrompt():
         if callable(function) == False:
             raise Exception("function must be a callable.")
         
-        # Define helper variables
-        if function.__defaults__ != None:
-            argcount_non_defaults = function.__code__.co_argcount - len(function.__defaults__)
-        else:
-            argcount_non_defaults = function.__code__.co_argcount
-
         # Initialise attributes
         self.function = function
         self.description = description
         
         self.function_args = {} # Can be either defined by developers or inputted by users
         for i in range(function.__code__.co_argcount):
-            if argcount_non_defaults < i:
-                default_at_function = function.__defaults__[i]
-            else:
-                default_at_function = None
-            
             self.function_args[function.__code__.co_varnames[i]] = {
                 "is_changeable": True,
-                "default_at_cli": None,
-                "default_at_function": default_at_function
+                "default_at_cli": None
             }
         self.function_args_aliases = {key: key for key in self.function_args.keys()}
         
@@ -151,8 +139,6 @@ class PyCliFunctionPrompt():
         for arg_name, arg_value in self.function_args.items():
             if arg_value["default_at_cli"] != None:
                 arg_value_to_pass = arg_value["default_at_cli"]
-            elif arg_value["default_at_function"] != None:
-                arg_value_to_pass = arg_value["default_at_function"]
             else:
                 arg_value_to_pass = None
 
