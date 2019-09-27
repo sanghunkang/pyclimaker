@@ -33,7 +33,13 @@ class PyCliFileSelectionPrompt(PyCliArgPrompt):
         super().__init__(description=description)
 
     def trigger(self, default_at_cli):
+        if os.path.exists(self.target_directory) == False:
+            utils.log_warning(f"Target directory(={self.target_directory}) doesn't exist, the program will automatically create the target directory")
+            os.mkdir(self.target_directory)
+            utils.log_success(f"Succefully created target directory(={self.target_directory})")
+        
         filenames = os.listdir(self.target_directory)
+        # filenames.sort(reverse=True) # NOTE WHICH SORT FUNCTION?
         padding = 0
         cancel_padding = 0
         while True:
@@ -65,8 +71,8 @@ class PyCliFileSelectionPrompt(PyCliArgPrompt):
             elif padding + self.max_len_filelist < len(filenames) and int(arg) == self.max_len_filelist+1:
                 padding += self.max_len_filelist
             elif int(arg) == self.max_len_filelist+cancel_padding+1:
-                print("Cancelling executing command")
-                break
+                utils.log_warning("Cancelling executing command")
+                return None
             elif 1 <= int(arg) and int(arg) <= self.max_len_filelist:
                 arg_index= int(arg) + padding - 1 
                 print(f"Selected argument: {filenames[arg_index]}")

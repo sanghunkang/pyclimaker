@@ -144,18 +144,21 @@ class PyCliFunctionPrompt():
 
             args_to_pass[arg_name] = arg_value_to_pass
 
-        # Prepare arguments using user inputs
-        for arg_name, arg_prompt in self.arg_prompts.items():
-            default_at_cli = self.function_args[arg_name]["default_at_cli"]
-            args_to_pass[arg_name] = arg_prompt.trigger(default_at_cli)
-
-        # NOTE CHECK IF ABORT SIGNAL IS RETURNED
-
         # Call the function
         try:
             print(f"Executing function({self.function.__name__})")
-            self.function(**args_to_pass)
-            utils.log_success(f"Successfully executed function({self.function.__name__})")
+            
+            # Prepare arguments using user inputs
+            for arg_name, arg_prompt in self.arg_prompts.items():
+                default_at_cli = self.function_args[arg_name]["default_at_cli"]
+                args_to_pass[arg_name] = arg_prompt.trigger(default_at_cli)
+                if args_to_pass[arg_name] == None: # None is considered abort signal
+                    utils.log_warning(f"Cancelled executing function({self.function.__name__})")
+            
+            if all(v != None for v in args_to_pass.values()) == True:
+            
+                self.function(**args_to_pass)
+                utils.log_success(f"Successfully executed function({self.function.__name__})")
         except Exception as e:
             print(e)
             utils.log_failure(f"An error occcured during execution of function({self.function.__name__})")
